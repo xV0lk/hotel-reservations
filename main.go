@@ -1,13 +1,52 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/api"
+	"github.com/xV0lk/hotel-reservations/types"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const (
+	dbUri    = "mongodb://localhost:27017"
+	dbName   = "hotel-reservations"
+	userColl = "users"
 )
 
 func main() {
+
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbUri))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Connected to MongoDB!")
+
+	ctx := context.Background()
+	coll := client.Database(dbName).Collection(userColl)
+
+	user := types.User{
+		FirstName: "Jorge",
+		LastName:  "Rojas",
+	}
+
+	_, err = coll.InsertOne(ctx, user)
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+
+	var resUser types.User
+	if err := coll.FindOne(ctx, bson.M{}).Decode(&resUser); err != nil {
+		log.Fatal("Error: ", err)
+	}
+	fmt.Println("resUser: ", resUser)
+
 	port := flag.String("port", ":3000", "port to run the server on")
 	app := fiber.New()
 	app.Get("/", handleHome)
