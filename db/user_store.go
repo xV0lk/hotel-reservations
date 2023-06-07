@@ -1,8 +1,7 @@
 package db
 
 import (
-	"context"
-
+	"github.com/valyala/fasthttp"
 	"github.com/xV0lk/hotel-reservations/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,8 +11,8 @@ import (
 const userColl = "users"
 
 type UserStore interface {
-	GetUserById(ctx context.Context, id string) (*types.User, error)
-	GetUsers(ctx context.Context) ([]*types.User, error)
+	GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error)
+	GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error)
 }
 
 type MongoUserStore struct {
@@ -28,7 +27,7 @@ func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
 	}
 }
 
-func (s *MongoUserStore) GetUserById(ctx context.Context, id string) (*types.User, error) {
+func (s *MongoUserStore) GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error) {
 	var user types.User
 	objectId, _ := primitive.ObjectIDFromHex(id)
 	if err := s.coll.FindOne(ctx, bson.M{"_id": objectId}).Decode(&user); err != nil {
@@ -37,7 +36,7 @@ func (s *MongoUserStore) GetUserById(ctx context.Context, id string) (*types.Use
 	return &user, nil
 }
 
-func (s *MongoUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
+func (s *MongoUserStore) GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error) {
 	var users []*types.User
 	cursor, err := s.coll.Find(ctx, bson.M{})
 	if err != nil {

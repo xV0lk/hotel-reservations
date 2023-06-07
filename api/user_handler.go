@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 )
@@ -19,11 +17,8 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 
 // Get all users
 func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
-	var (
-		id  = c.Params("id")
-		ctx = context.Background()
-	)
-	user, err := h.userStore.GetUserById(ctx, id)
+	var id = c.Params("id")
+	user, err := h.userStore.GetUserById(c.Context(), id)
 	if err != nil {
 		return err
 	}
@@ -33,8 +28,7 @@ func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
 
 // Get a single user with the id
 func (h *UserHandler) HandleGetUsers(c *fiber.Ctx) error {
-	var ctx = context.Background()
-	users, err := h.userStore.GetUsers(ctx)
+	users, err := h.userStore.GetUsers(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
