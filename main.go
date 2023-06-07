@@ -9,8 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/api"
 	"github.com/xV0lk/hotel-reservations/db"
-	"github.com/xV0lk/hotel-reservations/types"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -37,25 +35,6 @@ func main() {
 
 	// Initialize handlers
 	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
-
-	ctx := context.Background()
-	coll := client.Database(DBNAME).Collection(userColl)
-
-	user := types.User{
-		FirstName: "Jorge",
-		LastName:  "Rojas",
-	}
-
-	_, err = coll.InsertOne(ctx, user)
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
-
-	var resUser types.User
-	if err := coll.FindOne(ctx, bson.M{}).Decode(&resUser); err != nil {
-		log.Fatal("Error: ", err)
-	}
-	fmt.Println("resUser: ", resUser)
 
 	port := flag.String("port", ":3000", "port to run the server on")
 	app := fiber.New(fconfig)
