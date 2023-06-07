@@ -8,6 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/api"
+	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,9 +17,15 @@ import (
 
 const (
 	dbUri    = "mongodb://localhost:27017"
-	dbName   = "hotel-reservations"
+	DBNAME   = "hotel-reservations"
 	userColl = "users"
 )
+
+var fconfig = fiber.Config{
+	ErrorHandler: func(c *fiber.Ctx, err error) error {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	},
+}
 
 func main() {
 
@@ -28,8 +35,11 @@ func main() {
 	}
 	fmt.Println("Connected to MongoDB!")
 
+	// Initialize handlers
+	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
+
 	ctx := context.Background()
-	coll := client.Database(dbName).Collection(userColl)
+	coll := client.Database(DBNAME).Collection(userColl)
 
 	user := types.User{
 		FirstName: "Jorge",
@@ -48,13 +58,13 @@ func main() {
 	fmt.Println("resUser: ", resUser)
 
 	port := flag.String("port", ":3000", "port to run the server on")
-	app := fiber.New()
+	app := fiber.New(fconfig)
 	app.Get("/", handleHome)
 
 	// we can create api groups
 	apiV1 := app.Group("/api/v1")
-	apiV1.Get("/user", api.HandleGetUsers)
-	apiV1.Get("/user/:id", api.HandleGetUser)
+	apiV1.Get("/user", userHandler.HandleGetUsers)
+	apiV1.Get("/user/:id", userHandler.HandleGetUser)
 
 	app.Listen(*port)
 }

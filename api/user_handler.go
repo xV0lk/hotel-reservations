@@ -1,21 +1,43 @@
 package api
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/xV0lk/hotel-reservations/types"
+	"github.com/xV0lk/hotel-reservations/db"
 )
 
-// Get all users
-func HandleGetUsers(c *fiber.Ctx) error {
-	u := types.User{
-		FirstName: "John",
-		LastName:  "Doe",
+type UserHandler struct {
+	userStore db.UserStore
+}
+
+func NewUserHandler(userStore db.UserStore) *UserHandler {
+	return &UserHandler{
+		userStore: userStore,
 	}
-	return c.JSON(u)
+}
+
+// Get all users
+func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
+	var (
+		id  = c.Params("id")
+		ctx = context.Background()
+	)
+	user, err := h.userStore.GetUserById(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(user)
 }
 
 // Get a single user with the id
-func HandleGetUser(c *fiber.Ctx) error {
+func (h *UserHandler) HandleGetUsers(c *fiber.Ctx) error {
+	var ctx = context.Background()
+	users, err := h.userStore.GetUsers(ctx)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
 	// We can user fiber.map to create a map[string]interface{}
-	return c.JSON(fiber.Map{"user": "This is a single user"})
+	return c.JSON(users)
 }
