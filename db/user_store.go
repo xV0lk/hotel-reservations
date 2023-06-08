@@ -13,6 +13,7 @@ const userColl = "users"
 type UserStore interface {
 	GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error)
 	GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error)
+	PostUser(ctx *fasthttp.RequestCtx, user *types.User) (*types.User, error)
 }
 
 type MongoUserStore struct {
@@ -46,4 +47,13 @@ func (s *MongoUserStore) GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, erro
 		return nil, err
 	}
 	return users, nil
+}
+
+func (s *MongoUserStore) PostUser(ctx *fasthttp.RequestCtx, user *types.User) (*types.User, error) {
+	result, err := s.coll.InsertOne(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	user.ID = result.InsertedID.(primitive.ObjectID).Hex()
+	return user, nil
 }

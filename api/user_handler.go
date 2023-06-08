@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
+	"github.com/xV0lk/hotel-reservations/types"
 )
 
 type UserHandler struct {
@@ -34,4 +35,16 @@ func (h *UserHandler) HandleGetUsers(c *fiber.Ctx) error {
 	}
 	// We can user fiber.map to create a map[string]interface{}
 	return c.JSON(users)
+}
+
+func (h *UserHandler) HandleCreateUser(c *fiber.Ctx) error {
+	var newUser *types.User
+	if err := c.BodyParser(&newUser); err != nil {
+		return err
+	}
+	user, err := h.userStore.PostUser(c.Context(), newUser)
+	if err != nil {
+		return err
+	}
+	return c.JSON(user)
 }
