@@ -13,7 +13,9 @@ const userColl = "users"
 type UserStore interface {
 	GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error)
 	GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error)
-	PostUser(ctx *fasthttp.RequestCtx, user *types.User) (*types.User, error)
+	InsertUser(ctx *fasthttp.RequestCtx, user *types.User) error
+	DeleteUser(ctx *fasthttp.RequestCtx, id string) error
+	UpdateUser(ctx *fasthttp.RequestCtx, id string, jsonBody map[string]any) (*types.User, error)
 }
 
 type MongoUserStore struct {
@@ -49,11 +51,38 @@ func (s *MongoUserStore) GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, erro
 	return users, nil
 }
 
-func (s *MongoUserStore) PostUser(ctx *fasthttp.RequestCtx, user *types.User) (*types.User, error) {
+func (s *MongoUserStore) InsertUser(ctx *fasthttp.RequestCtx, user *types.User) error {
 	result, err := s.coll.InsertOne(ctx, user)
+	if err != nil {
+		return err
+	}
+	user.ID = result.InsertedID.(primitive.ObjectID)
+	return nil
+}
+
+func (s *MongoUserStore) DeleteUser(ctx *fasthttp.RequestCtx, id string) error {
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	_, err := s.coll.DeleteOne(ctx, bson.M{"_id": objectId})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *MongoUserStore) UpdateUser(ctx *fasthttp.RequestCtx, id string, jsonBody map[string]any) (*types.User, error) {
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": objectId}
+	update := bson.M{"$set": jsonBody}
+	result, err := s.coll.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
 	}
-	user.ID = result.InsertedID.(primitive.ObjectID).Hex()
-	return user, nil
+	if result.MatchedCount == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+	if updated, err := s.GetUserById(ctx, id); err != nil {
+		return nil, err
+	} else {
+		return updated, nil
+	}
 }
