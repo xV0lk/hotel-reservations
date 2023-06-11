@@ -72,26 +72,26 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 
 func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 	var (
-		id       = c.Params("id")
-		jsonData map[string]any
-		newUser  *types.NewUserParams
+		id         = c.Params("id")
+		jsonData   map[string]any
+		updateUser *types.UpdateUserParams
 	)
-	if err := c.BodyParser(&newUser); err != nil {
+	if err := c.BodyParser(&updateUser); err != nil {
 		return err
-	}
-	if errors := newUser.Validate(); len(errors) != 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(errors)
 	}
 	err := c.BodyParser(&jsonData)
 	if err != nil {
 		return err
 	}
-	if err := types.CheckUserBody(jsonData); err != nil {
+	if err := updateUser.CheckBody(jsonData); err != nil {
 		return err
 	}
-	updated, err := h.userStore.UpdateUser(c.Context(), id, jsonData)
+	if errors := updateUser.Validate(); len(errors) != 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errors})
+	}
+	updated, err := h.userStore.UpdateUser(c.Context(), id, updateUser.ToBson())
 	if err != nil {
 		return err
 	}
-	return c.Status(fiber.StatusCreated).JSON(updated)
+	return c.Status(fiber.StatusOK).JSON(updated)
 }

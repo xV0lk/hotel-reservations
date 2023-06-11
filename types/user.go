@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,6 +31,11 @@ type NewUserParams struct {
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
+}
+
+type UpdateUserParams struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
 func (params NewUserParams) Validate() map[string]string {
@@ -90,23 +96,39 @@ func NewUserFromParams(params *NewUserParams) (*User, error) {
 	}, nil
 }
 
-// CheckUserBody checks if the json body contains the correct keys
-// and if the password is not empty
-func CheckUserBody(body map[string]any) error {
-	var UserMap = map[string]*interface{}{
-		"firstName": nil,
-		"lastName":  nil,
-		"email":     nil,
-		"password":  nil,
+func (params UpdateUserParams) ToBson() bson.M {
+	bson := bson.M{}
+	if params.FirstName != "" {
+		bson["firstName"] = params.FirstName
 	}
-	for key, value := range body {
-		_, ok := UserMap[key]
+	if params.LastName != "" {
+		bson["lastName"] = params.LastName
+	}
+	return bson
+}
+
+func (params UpdateUserParams) Validate() map[string]string {
+	errors := map[string]string{}
+	if params.FirstName != "" && len(params.FirstName) < minFNameLen {
+		errors["firstName"] = fmt.Sprintf("first name must be at least %d characters long", minFNameLen)
+	}
+	if params.LastName != "" && len(params.LastName) < minLNameLen {
+		errors["lastName"] = fmt.Sprintf("last name must be at least %d characters long", minLNameLen)
+	}
+	return errors
+}
+
+// CheckUserBody checks if the json body contains the correct keys
+func (params UpdateUserParams) CheckBody(jsonBody map[string]any) error {
+	paramsMap := params.ToBson()
+	for key := range jsonBody {
+		_, ok := paramsMap[key]
 		if !ok {
 			return fmt.Errorf("the key '%s' is not a valid user property", key)
 		}
-		if key == "password" && value == "" {
-			return errors.New("password cannot be removed")
-		}
+	}
+	if len(jsonBody) == 0 {
+		return errors.New("no valid user properties were provided")
 	}
 	return nil
 }

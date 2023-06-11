@@ -15,7 +15,7 @@ type UserStore interface {
 	GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error)
 	InsertUser(ctx *fasthttp.RequestCtx, user *types.User) error
 	DeleteUser(ctx *fasthttp.RequestCtx, id string) error
-	UpdateUser(ctx *fasthttp.RequestCtx, id string, jsonBody map[string]any) (*types.User, error)
+	UpdateUser(ctx *fasthttp.RequestCtx, id string, update bson.M) (*types.User, error)
 }
 
 type MongoUserStore struct {
@@ -69,11 +69,11 @@ func (s *MongoUserStore) DeleteUser(ctx *fasthttp.RequestCtx, id string) error {
 	return nil
 }
 
-func (s *MongoUserStore) UpdateUser(ctx *fasthttp.RequestCtx, id string, jsonBody map[string]any) (*types.User, error) {
+func (s *MongoUserStore) UpdateUser(ctx *fasthttp.RequestCtx, id string, update bson.M) (*types.User, error) {
 	objectId, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": objectId}
-	update := bson.M{"$set": jsonBody}
-	result, err := s.coll.UpdateOne(ctx, filter, update)
+	uq := bson.M{"$set": update}
+	result, err := s.coll.UpdateOne(ctx, filter, uq)
 	if err != nil {
 		return nil, err
 	}
