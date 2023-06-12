@@ -1,6 +1,9 @@
 package db
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/valyala/fasthttp"
 	"github.com/xV0lk/hotel-reservations/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,12 +13,17 @@ import (
 
 const userColl = "users"
 
+type Dropper interface {
+	Drop(context.Context) error
+}
 type UserStore interface {
 	GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error)
 	GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error)
 	InsertUser(ctx *fasthttp.RequestCtx, user *types.User) error
 	DeleteUser(ctx *fasthttp.RequestCtx, id string) error
-	UpdateUser(ctx *fasthttp.RequestCtx, id string, update bson.M) (*types.User, error)
+	UpdateUser(ctx *fasthttp.RequestCtx, id string, updateUser *types.UpdateUserParams) (*types.User, error)
+
+	Dropper
 }
 
 type MongoUserStore struct {
@@ -23,11 +31,16 @@ type MongoUserStore struct {
 	coll   *mongo.Collection
 }
 
-func NewMongoUserStore(client *mongo.Client) *MongoUserStore {
+func NewMongoUserStore(client *mongo.Client, dbName string) *MongoUserStore {
 	return &MongoUserStore{
 		client: client,
-		coll:   client.Database(DBNAME).Collection(userColl),
+		coll:   client.Database(dbName).Collection(userColl),
 	}
+}
+
+func (s *MongoUserStore) Drop(ctx context.Context) error {
+	fmt.Println("Dropping test database")
+	return s.coll.Drop(ctx)
 }
 
 func (s *MongoUserStore) GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error) {
@@ -69,11 +82,11 @@ func (s *MongoUserStore) DeleteUser(ctx *fasthttp.RequestCtx, id string) error {
 	return nil
 }
 
-func (s *MongoUserStore) UpdateUser(ctx *fasthttp.RequestCtx, id string, update bson.M) (*types.User, error) {
+func (s *MongoUserStore) UpdateUser(ctx *fasthttp.RequestCtx, id string, updateUser *types.UpdateUserParams) (*types.User, error) {
 	objectId, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": objectId}
-	uq := bson.M{"$set": update}
-	result, err := s.coll.UpdateOne(ctx, filter, uq)
+	update := bson.M{"$set": updateUser.ToBson()}
+	result, err := s.coll.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return nil, err
 	}

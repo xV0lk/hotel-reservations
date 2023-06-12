@@ -89,7 +89,7 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 	if errors := updateUser.Validate(); len(errors) != 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errors})
 	}
-	updated, err := h.userStore.UpdateUser(c.Context(), id, updateUser.ToBson())
+	updated, err := h.userStore.UpdateUser(c.Context(), id, updateUser)
 	if err != nil {
 		return err
 	}

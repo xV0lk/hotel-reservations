@@ -40,16 +40,16 @@ type UpdateUserParams struct {
 
 func (params NewUserParams) Validate() map[string]string {
 	errors := map[string]string{}
-	if params.FirstName != "" && len(params.FirstName) < minFNameLen {
+	if len(params.FirstName) < minFNameLen {
 		errors["firstName"] = fmt.Sprintf("first name must be at least %d characters long", minFNameLen)
 	}
-	if params.LastName != "" && len(params.LastName) < minLNameLen {
+	if len(params.LastName) < minLNameLen {
 		errors["lastName"] = fmt.Sprintf("last name must be at least %d characters long", minLNameLen)
 	}
-	if err := ValidatePassword(params.Password); params.Password != "" && len(err) > 0 {
+	if err := ValidatePassword(params.Password); len(err) > 0 {
 		errors["password"] = strings.Join(err, ", ")
 	}
-	if err := ValidateEmail(params.Email); params.Email != "" && err != nil {
+	if err := ValidateEmail(params.Email); err != nil {
 		errors["email"] = err.Error()
 	}
 
@@ -124,7 +124,7 @@ func (params UpdateUserParams) CheckBody(jsonBody map[string]any) error {
 	for key := range jsonBody {
 		_, ok := paramsMap[key]
 		if !ok {
-			return fmt.Errorf("the key '%s' is not a valid user property", key)
+			return fmt.Errorf("the key '%s' is not a valid update property", key)
 		}
 	}
 	if len(jsonBody) == 0 {

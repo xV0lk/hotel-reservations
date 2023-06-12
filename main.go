@@ -34,7 +34,7 @@ func main() {
 	fmt.Println("Connected to MongoDB!")
 
 	// Initialize handlers
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client))
+	userHandler := api.NewUserHandler(db.NewMongoUserStore(client, DBNAME))
 
 	port := flag.String("port", ":3000", "port to run the server on")
 	app := fiber.New(fconfig)
