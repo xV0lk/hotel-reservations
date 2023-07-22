@@ -1,9 +1,13 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/types"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserHandler struct {
@@ -14,6 +18,24 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 	return &UserHandler{
 		userStore: userStore,
 	}
+}
+
+type LoginBody struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (h *UserHandler) HandleLogin(c *fiber.Ctx) error {
+	var body LoginBody
+	if err := c.BodyParser(&body); err != nil {
+		return err
+	}
+	user, err := h.userStore.GetUser(c.Context(), bson.M{"email": body.Email})
+	if err != nil {
+		return err
+	}
+	println(user)
+	return nil
 }
 
 // Get all users
@@ -58,6 +80,10 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 	}
 	err = h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			errStr := fmt.Sprintf("Duplicate key error for %s", db.FormatMongoE(err))
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errStr})
+		}
 		return err
 	}
 	return c.Status(fiber.StatusCreated).JSON(user)

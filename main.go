@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 	"github.com/xV0lk/hotel-reservations/api"
 	"github.com/xV0lk/hotel-reservations/db"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,6 +33,12 @@ func main() {
 	}
 	fmt.Println("Connected to MongoDB!")
 
+	// Load environment variables
+	err = godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading environment variables file")
+	}
+
 	// Initialize handlers
 	var (
 		// stores
@@ -50,7 +57,11 @@ func main() {
 		port  = flag.String("port", ":3000", "port to run the server on")
 		app   = fiber.New(fconfig)
 		apiV1 = app.Group("/api/v1")
+		// apiV1 = app.Group("/api/v1", middleware.JWTAuth)
 	)
+
+	// Create unique email index
+	store.User.IndexEmail(context.Background())
 
 	app.Get("/", handleHome)
 

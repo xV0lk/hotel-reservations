@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const userColl = "users"
@@ -17,8 +18,10 @@ type Dropper interface {
 	Drop(context.Context) error
 }
 type UserStore interface {
+	IndexEmail(ctx context.Context) error
 	GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error)
 	GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error)
+	GetUser(ctx *fasthttp.RequestCtx, filter bson.M) (*types.User, error)
 	InsertUser(ctx *fasthttp.RequestCtx, user *types.User) error
 	DeleteUser(ctx *fasthttp.RequestCtx, id string) error
 	UpdateUser(ctx *fasthttp.RequestCtx, id string, updateUser *types.UpdateUserParams) (*types.User, error)
@@ -38,6 +41,15 @@ func NewMongoUserStore(client *mongo.Client, dbName string) *MongoUserStore {
 	}
 }
 
+func (s *MongoUserStore) IndexEmail(ctx context.Context) error {
+	name, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.M{"email": 1},
+		Options: options.Index().SetUnique(true),
+	})
+	fmt.Printf("-------------------------\nname: %s\n", name)
+	return err
+}
+
 func (s *MongoUserStore) Drop(ctx context.Context) error {
 	fmt.Println("Dropping test database")
 	return s.coll.Drop(ctx)
@@ -47,6 +59,14 @@ func (s *MongoUserStore) GetUserById(ctx *fasthttp.RequestCtx, id string) (*type
 	var user types.User
 	objectId, _ := primitive.ObjectIDFromHex(id)
 	if err := s.coll.FindOne(ctx, bson.M{"_id": objectId}).Decode(&user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *MongoUserStore) GetUser(ctx *fasthttp.RequestCtx, filter bson.M) (*types.User, error) {
+	var user types.User
+	if err := s.coll.FindOne(ctx, filter).Decode(&user); err != nil {
 		return nil, err
 	}
 	return &user, nil

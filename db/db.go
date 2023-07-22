@@ -1,6 +1,9 @@
 package db
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -24,4 +27,13 @@ func HandleGetError(c *fiber.Ctx, err error) error {
 		return err
 	}
 	return nil
+}
+
+func FormatMongoE(e error) string {
+	re := regexp.MustCompile(`\{([^}]*)\}`)
+	matches := re.FindStringSubmatch(e.Error())
+	if len(matches) > 1 {
+		return strings.ReplaceAll(strings.TrimSpace(matches[1]), "\"", "'")
+	}
+	return ""
 }
