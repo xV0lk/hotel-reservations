@@ -15,7 +15,6 @@ import (
 
 const (
 	dbUri    = "mongodb://localhost:27017"
-	DBNAME   = "hotel-reservations"
 	userColl = "users"
 )
 
@@ -34,20 +33,32 @@ func main() {
 	fmt.Println("Connected to MongoDB!")
 
 	// Initialize handlers
-	userHandler := api.NewUserHandler(db.NewMongoUserStore(client, DBNAME))
+	var (
+		// stores
+		userStore  = db.NewMongoUserStore(client, db.DBNAME)
+		hotelStore = db.NewMongoHotelStore(client, db.DBNAME)
+		roomStore  = db.NewMongoRoomStore(client, hotelStore)
+		// handlers
+		userHandler  = api.NewUserHandler(userStore)
+		hotelHandler = api.NewHotelHandler(hotelStore, roomStore)
+		// connection
+		port  = flag.String("port", ":3000", "port to run the server on")
+		app   = fiber.New(fconfig)
+		apiV1 = app.Group("/api/v1")
+	)
 
-	port := flag.String("port", ":3000", "port to run the server on")
-	app := fiber.New(fconfig)
 	app.Get("/", handleHome)
 
-	// we can create api groups
-	apiV1 := app.Group("/api/v1")
+	// user handlers
 	apiV1.Get("/user", userHandler.HandleGetUsers)
 	apiV1.Get("/user/:id", userHandler.HandleGetUser)
 	apiV1.Post("/user", userHandler.HandlePostUser)
 	apiV1.Delete("/user/:id", userHandler.HandleDeleteUser)
 	apiV1.Put("/user/:id", userHandler.HandlePutUser)
 
+	// hotel handlers
+	apiV1.Get("/hotel", hotelHandler.HandleGetHotels)
+	apiV1.Get("/hotel/:id", hotelHandler.HandleGetHotel)
 	app.Listen(*port)
 }
 

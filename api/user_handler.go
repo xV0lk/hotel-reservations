@@ -4,7 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/types"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserHandler struct {
@@ -21,13 +20,7 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
 	var id = c.Params("id")
 	user, err := h.userStore.GetUserById(c.Context(), id)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
-		}
-		return err
-	}
-
+	db.HandleGetError(c, err)
 	return c.JSON(user)
 }
 
