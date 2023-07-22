@@ -38,9 +38,14 @@ func main() {
 		userStore  = db.NewMongoUserStore(client, db.DBNAME)
 		hotelStore = db.NewMongoHotelStore(client, db.DBNAME)
 		roomStore  = db.NewMongoRoomStore(client, hotelStore)
+		store      = &db.Store{
+			User:  userStore,
+			Hotel: hotelStore,
+			Room:  roomStore,
+		}
 		// handlers
 		userHandler  = api.NewUserHandler(userStore)
-		hotelHandler = api.NewHotelHandler(hotelStore, roomStore)
+		hotelHandler = api.NewHotelHandler(store)
 		// connection
 		port  = flag.String("port", ":3000", "port to run the server on")
 		app   = fiber.New(fconfig)
@@ -59,6 +64,7 @@ func main() {
 	// hotel handlers
 	apiV1.Get("/hotel", hotelHandler.HandleGetHotels)
 	apiV1.Get("/hotel/:id", hotelHandler.HandleGetHotel)
+	apiV1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
 	app.Listen(*port)
 }
 

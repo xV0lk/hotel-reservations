@@ -10,6 +10,12 @@ const (
 	DBURI  = "mongodb://localhost:27017"
 )
 
+type Store struct {
+	User  UserStore
+	Hotel HotelStore
+	Room  RoomStore
+}
+
 func HandleGetError(c *fiber.Ctx, err error) error {
 	if err != nil {
 		if err == mongo.ErrNoDocuments {

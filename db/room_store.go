@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 
+	"github.com/valyala/fasthttp"
 	"github.com/xV0lk/hotel-reservations/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,6 +14,7 @@ const roomColl = "rooms"
 
 type RoomStore interface {
 	InsertRoom(ctx context.Context, room *types.Room) error
+	GetRooms(ctx *fasthttp.RequestCtx, filter bson.M) ([]*types.Room, error)
 }
 
 type MongoRoomStore struct {
@@ -45,4 +47,15 @@ func (s *MongoRoomStore) InsertRoom(ctx context.Context, room *types.Room) error
 		return err
 	}
 	return nil
+}
+func (s *MongoRoomStore) GetRooms(ctx *fasthttp.RequestCtx, filter bson.M) ([]*types.Room, error) {
+	var rooms []*types.Room
+	cursor, err := s.coll.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(ctx, &rooms); err != nil {
+		return nil, err
+	}
+	return rooms, nil
 }
