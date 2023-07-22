@@ -1,3 +1,21 @@
 package db
 
-const DBNAME = "hotel-reservations"
+import (
+	"github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+const (
+	DBNAME = "hotel-reservations"
+	DBURI  = "mongodb://localhost:27017"
+)
+
+func HandleGetError(c *fiber.Ctx, err error) error {
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+		}
+		return err
+	}
+	return nil
+}
