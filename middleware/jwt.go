@@ -13,16 +13,17 @@ func JWTAuth(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
-	if err := ParseToken(token); err != nil {
-		fmt.Printf("-------------------------\nAuth error: %s\n", err)
+	claims, err := ValidateToken(token)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
+	fmt.Printf("-------------------------\nclaims: %+v\n", claims)
+	// check token expiration
+
 	return nil
 }
 
-func ParseToken(tokenStr string) error {
-	secret := os.Getenv("JWT_SECRET")
-	fmt.Printf("-------------------------\nsecret: %s\n", secret)
+func ValidateToken(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -36,13 +37,13 @@ func ParseToken(tokenStr string) error {
 	})
 	if err != nil {
 		fmt.Printf("-------------------------\nerr: %s\n", err)
-		return fmt.Errorf("Unauthorized")
+		return nil, fmt.Errorf("Unauthorized")
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		fmt.Println(claims)
+		return claims, nil
 	} else {
 		fmt.Println(err)
+		return nil, fmt.Errorf("Unauthorized")
 	}
-	return fmt.Errorf("Unauthorized")
 }

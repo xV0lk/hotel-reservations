@@ -132,3 +132,7 @@ func (params UpdateUserParams) CheckBody(jsonBody map[string]any) error {
 	}
 	return nil
 }
+
+func IsValidPassword(ipass, upass string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(upass), []byte(ipass)) == nil
+}

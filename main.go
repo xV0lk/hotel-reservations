@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/xV0lk/hotel-reservations/api"
 	"github.com/xV0lk/hotel-reservations/db"
+	"github.com/xV0lk/hotel-reservations/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -21,6 +23,9 @@ const (
 
 var fconfig = fiber.Config{
 	ErrorHandler: func(c *fiber.Ctx, err error) error {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not found"})
+		}
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	},
 }
@@ -53,17 +58,20 @@ func main() {
 		// handlers
 		userHandler  = api.NewUserHandler(userStore)
 		hotelHandler = api.NewHotelHandler(store)
+		authHandler  = api.NewAuthHandler(userStore)
 		// connection
-		port  = flag.String("port", ":3000", "port to run the server on")
-		app   = fiber.New(fconfig)
-		apiV1 = app.Group("/api/v1")
-		// apiV1 = app.Group("/api/v1", middleware.JWTAuth)
+		port = flag.String("port", ":3000", "port to run the server on")
+		app  = fiber.New(fconfig)
+		// apiV1 = app.Group("/api/v1")
+		apiV1 = app.Group("/api/v1", middleware.JWTAuth)
 	)
 
 	// Create unique email index
 	store.User.IndexEmail(context.Background())
 
 	app.Get("/", handleHome)
+	// Auth
+	app.Post("/api/auth", authHandler.HandleAuthenticate)
 
 	// user handlers
 	apiV1.Get("/user", userHandler.HandleGetUsers)
@@ -71,6 +79,7 @@ func main() {
 	apiV1.Post("/user", userHandler.HandlePostUser)
 	apiV1.Delete("/user/:id", userHandler.HandleDeleteUser)
 	apiV1.Put("/user/:id", userHandler.HandlePutUser)
+	// apiV1.Post("/login", userHandler.HandleLogin)
 
 	// hotel handlers
 	apiV1.Get("/hotel", hotelHandler.HandleGetHotels)
