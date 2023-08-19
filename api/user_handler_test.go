@@ -26,20 +26,22 @@ type expected struct {
 	body   any
 }
 
-type postTest struct {
+type postTest[T any] struct {
 	name  string
 	ttype string
-	input types.NewUserParams
+	input T
 	expected
 }
 
-type failResponse struct {
+type failUserResponse struct {
 	Error map[string]string `json:"error"`
 }
 
 type testdb struct {
 	db.UserStore
 }
+
+type userTest types.NewUserParams
 
 func (tdb *testdb) Drop(t *testing.T) {
 	if err := tdb.UserStore.Drop(context.TODO()); err != nil {
@@ -53,7 +55,7 @@ func setup(t *testing.T) *testdb {
 		log.Fatal(err)
 	}
 	fmt.Println("Connected to test MongoDB!")
-	return &testdb{db.NewMongoUserStore(client, testDbName)}
+	return &testdb{db.NewMongoUserStore(client)}
 }
 
 func TestPostUser(t *testing.T) {
@@ -64,15 +66,15 @@ func TestPostUser(t *testing.T) {
 	userHandler := NewUserHandler(tdb.UserStore)
 	app.Post("/", userHandler.HandlePostUser)
 
-	for _, tc := range testCases {
+	for _, tc := range userTests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.test(t, app)
+			tc.testUser(t, app)
 		})
 	}
 
 }
 
-func (tc postTest) test(t *testing.T, app *fiber.App) {
+func (tc postTest[userTest]) testUser(t *testing.T, app *fiber.App) {
 	b, _ := json.Marshal(tc.input)
 	req := httptest.NewRequest("POST", "/", bytes.NewReader(b))
 	req.Header.Add("Content-Type", "application/json")
@@ -95,7 +97,7 @@ func (tc postTest) test(t *testing.T, app *fiber.App) {
 			}
 		}
 	} else if tc.ttype == "fail" {
-		var resBody failResponse
+		var resBody failUserResponse
 		err := json.NewDecoder(res.Body).Decode(&resBody)
 		if err != nil {
 			t.Fatal(err)
@@ -108,11 +110,11 @@ func (tc postTest) test(t *testing.T, app *fiber.App) {
 	}
 }
 
-var testCases = []postTest{
+var userTests = []postTest[userTest]{
 	{
 		name:  "valid user",
 		ttype: "pass",
-		input: types.NewUserParams{
+		input: userTest{
 			FirstName: "Test",
 			LastName:  "User",
 			Email:     "testuser@test.com",
@@ -130,7 +132,7 @@ var testCases = []postTest{
 	{
 		name:  "invalid email and password",
 		ttype: "fail",
-		input: types.NewUserParams{
+		input: userTest{
 			FirstName: "Test",
 			LastName:  "User",
 			Email:     "testuser",
