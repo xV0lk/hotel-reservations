@@ -39,7 +39,7 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	}
 	user, err := h.userStore.GetUser(c.Context(), bson.M{"email": body.Email})
 	if err != nil {
-		return err
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not Found"})
 	}
 	if !types.IsValidPassword(body.Password, user.Password) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Password"})
@@ -58,7 +58,7 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 
 func createUserToken(user *types.User) (string, error) {
 	now := time.Now()
-	expire := now.Add(time.Hour * 24)
+	expire := now.Add(time.Hour * 24).Unix()
 	claims := jwt.MapClaims{
 		"id":         user.ID,
 		"email":      user.Email,
