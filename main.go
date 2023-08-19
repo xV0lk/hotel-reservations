@@ -47,8 +47,8 @@ func main() {
 	// Initialize handlers
 	var (
 		// stores
-		userStore  = db.NewMongoUserStore(client)
-		hotelStore = db.NewMongoHotelStore(client)
+		userStore  = db.NewMongoUserStore(client, db.DBNAME)
+		hotelStore = db.NewMongoHotelStore(client, db.DBNAME)
 		roomStore  = db.NewMongoRoomStore(client, hotelStore)
 		store      = &db.Store{
 			User:  userStore,

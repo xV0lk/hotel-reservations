@@ -55,7 +55,7 @@ func setup(t *testing.T) *testdb {
 		log.Fatal(err)
 	}
 	fmt.Println("Connected to test MongoDB!")
-	return &testdb{db.NewMongoUserStore(client)}
+	return &testdb{db.NewMongoUserStore(client, testDbName)}
 }
 
 func TestPostUser(t *testing.T) {
