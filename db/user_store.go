@@ -22,7 +22,7 @@ type UserStore interface {
 	GetUserById(ctx *fasthttp.RequestCtx, id string) (*types.User, error)
 	GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, error)
 	GetUser(ctx *fasthttp.RequestCtx, filter bson.M) (*types.User, error)
-	InsertUser(ctx *fasthttp.RequestCtx, user *types.User) error
+	InsertUser(ctx context.Context, user *types.User) error
 	DeleteUser(ctx *fasthttp.RequestCtx, id string) error
 	UpdateUser(ctx *fasthttp.RequestCtx, id string, updateUser *types.UpdateUserParams) (*types.User, error)
 
@@ -42,11 +42,10 @@ func NewMongoUserStore(client *mongo.Client, dbName string) *MongoUserStore {
 }
 
 func (s *MongoUserStore) IndexEmail(ctx context.Context) error {
-	name, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
+	_, err := s.coll.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys:    bson.M{"email": 1},
 		Options: options.Index().SetUnique(true),
 	})
-	fmt.Printf("-------------------------\nname: %s\n", name)
 	return err
 }
 
@@ -84,7 +83,7 @@ func (s *MongoUserStore) GetUsers(ctx *fasthttp.RequestCtx) ([]*types.User, erro
 	return users, nil
 }
 
-func (s *MongoUserStore) InsertUser(ctx *fasthttp.RequestCtx, user *types.User) error {
+func (s *MongoUserStore) InsertUser(ctx context.Context, user *types.User) error {
 	result, err := s.coll.InsertOne(ctx, user)
 	if err != nil {
 		return err

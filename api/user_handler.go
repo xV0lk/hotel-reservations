@@ -6,7 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/types"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -18,24 +17,6 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 	return &UserHandler{
 		userStore: userStore,
 	}
-}
-
-type LoginBody struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-func (h *UserHandler) HandleLogin(c *fiber.Ctx) error {
-	var body LoginBody
-	if err := c.BodyParser(&body); err != nil {
-		return err
-	}
-	user, err := h.userStore.GetUser(c.Context(), bson.M{"email": body.Email})
-	if err != nil {
-		return err
-	}
-	println(user)
-	return nil
 }
 
 // Get all users
