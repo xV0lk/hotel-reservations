@@ -34,15 +34,15 @@ func seedHotel(name, location string, rating, priceCategory float64) {
 			BasePrice: (priceCategory * 50) - 1,
 		},
 		{
-			Type:      types.Deluxe,
+			Type:      types.Double,
 			BasePrice: (priceCategory * 80) - 1,
 		},
 		{
-			Type:      types.Double,
+			Type:      types.SeaSide,
 			BasePrice: (priceCategory * 110) - 1,
 		},
 		{
-			Type:      types.SeaSide,
+			Type:      types.Deluxe,
 			BasePrice: (priceCategory * 140) - 1,
 		},
 	}
