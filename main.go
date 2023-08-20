@@ -59,11 +59,12 @@ func main() {
 		userHandler  = api.NewUserHandler(userStore)
 		hotelHandler = api.NewHotelHandler(store)
 		authHandler  = api.NewAuthHandler(userStore)
+		roomHandler  = api.NewRoomHandler(store)
 		// connection
 		port = flag.String("port", ":3000", "port to run the server on")
 		app  = fiber.New(fconfig)
 		// apiV1 = app.Group("/api/v1")
-		apiV1 = app.Group("/api/v1", middleware.JWTAuth)
+		apiV1 = app.Group("/api/v1", middleware.JWTAuth(userStore))
 	)
 
 	// Create unique email index
@@ -85,6 +86,10 @@ func main() {
 	apiV1.Get("/hotel", hotelHandler.HandleGetHotels)
 	apiV1.Get("/hotel/:id", hotelHandler.HandleGetHotel)
 	apiV1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
+
+	// room handlers
+	apiV1.Post("/room/:id/book", roomHandler.HandleBookRoom)
+
 	app.Listen(*port)
 }
 

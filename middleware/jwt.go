@@ -7,23 +7,35 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/xV0lk/hotel-reservations/db"
 )
 
-func JWTAuth(c *fiber.Ctx) error {
-	token, ok := c.GetReqHeaders()["Authorization"]
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+func JWTAuth(userStore db.UserStore) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		token, ok := c.GetReqHeaders()["Authorization"]
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		}
+		claims, err := ValidateToken(token)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		}
+		// check token expiration
+		expiration := claims["expiration"].(float64)
+		if int64(expiration) < time.Now().Unix() {
+			return fmt.Errorf("token expired")
+		}
+		userID := claims["id"].(string)
+		fmt.Printf("-------------------------\nuserID: %s\n", userID)
+		user, err := userStore.GetUserById(c.Context(), userID)
+		if err != nil {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		}
+		user.Password = ""
+		c.Context().SetUserValue("user", user)
+
+		return c.Next()
 	}
-	claims, err := ValidateToken(token)
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
-	}
-	// check token expiration
-	expiration := claims["expiration"].(float64)
-	if int64(expiration) < time.Now().Unix() {
-		return fmt.Errorf("token expired")
-	}
-	return c.Next()
 }
 
 func ValidateToken(tokenStr string) (jwt.MapClaims, error) {
