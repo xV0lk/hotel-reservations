@@ -15,6 +15,7 @@ const roomColl = "rooms"
 type RoomStore interface {
 	InsertRoom(ctx context.Context, room *types.Room) error
 	GetRooms(ctx *fasthttp.RequestCtx, filter bson.M) ([]*types.Room, error)
+	GetRoomById(ctx *fasthttp.RequestCtx, id string) (*types.Room, error)
 }
 
 type MongoRoomStore struct {
@@ -58,4 +59,13 @@ func (s *MongoRoomStore) GetRooms(ctx *fasthttp.RequestCtx, filter bson.M) ([]*t
 		return nil, err
 	}
 	return rooms, nil
+}
+
+func (s *MongoRoomStore) GetRoomById(ctx *fasthttp.RequestCtx, id string) (*types.Room, error) {
+	var room types.Room
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	if err := s.coll.FindOne(ctx, bson.M{"_id": objectId}).Decode(&room); err != nil {
+		return nil, err
+	}
+	return &room, nil
 }
