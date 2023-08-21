@@ -47,19 +47,22 @@ func main() {
 	// Initialize handlers
 	var (
 		// stores
-		userStore  = db.NewMongoUserStore(client, db.DBNAME)
-		hotelStore = db.NewMongoHotelStore(client, db.DBNAME)
-		roomStore  = db.NewMongoRoomStore(client, hotelStore)
-		store      = &db.Store{
-			User:  userStore,
-			Hotel: hotelStore,
-			Room:  roomStore,
+		userStore    = db.NewMongoUserStore(client, db.DBNAME)
+		hotelStore   = db.NewMongoHotelStore(client, db.DBNAME)
+		roomStore    = db.NewMongoRoomStore(client, hotelStore)
+		bookingStore = db.NewMongoBookingStore(client, db.DBNAME)
+		store        = &db.Store{
+			User:    userStore,
+			Hotel:   hotelStore,
+			Room:    roomStore,
+			Booking: bookingStore,
 		}
 		// handlers
-		userHandler  = api.NewUserHandler(userStore)
-		hotelHandler = api.NewHotelHandler(store)
-		authHandler  = api.NewAuthHandler(userStore)
-		roomHandler  = api.NewRoomHandler(store)
+		userHandler    = api.NewUserHandler(userStore)
+		hotelHandler   = api.NewHotelHandler(store)
+		authHandler    = api.NewAuthHandler(userStore)
+		roomHandler    = api.NewRoomHandler(store)
+		bookingHandler = api.NewBookingHandler(store)
 		// connection
 		port = flag.String("port", ":3000", "port to run the server on")
 		app  = fiber.New(fconfig)
@@ -84,11 +87,19 @@ func main() {
 
 	// hotel handlers
 	apiV1.Get("/hotel", hotelHandler.HandleGetHotels)
+	apiV1.Get("/hotel/bookings", hotelHandler.HandleGetBookings)
 	apiV1.Get("/hotel/:id", hotelHandler.HandleGetHotel)
 	apiV1.Get("/hotel/:id/rooms", hotelHandler.HandleGetRooms)
+	apiV1.Get("/hotel/:id/bookings", hotelHandler.HandleGetBookingsById)
 
 	// room handlers
 	apiV1.Post("/room/:id/book", roomHandler.HandleBookRoom)
+	apiV1.Get("/room", roomHandler.HandleGetRooms)
+
+	// booking Handlers
+	apiV1.Get("/booking", bookingHandler.HandleGetBookings)
+	apiV1.Get("/booking/:id", bookingHandler.HandleGetBooking)
+	apiV1.Get("/booking/month", bookingHandler.HandleMonthBookings)
 
 	app.Listen(*port)
 }
