@@ -17,6 +17,7 @@ type HotelStore interface {
 	Update(ctx context.Context, filter, update bson.M) (*types.Hotel, error)
 	GetHotelById(ctx context.Context, id string) (*types.Hotel, error)
 	GetHotels(ctx *fasthttp.RequestCtx) ([]*types.Hotel, error)
+	GetHotelBookings(ctx *fasthttp.RequestCtx, id string) ([]*types.HotelBookings, error)
 }
 
 type MongoHotelStore struct {
@@ -72,6 +73,31 @@ func (s *MongoHotelStore) GetHotels(ctx *fasthttp.RequestCtx) ([]*types.Hotel, e
 		return nil, err
 	}
 	if err := cursor.All(ctx, &hotels); err != nil {
+		return nil, err
+	}
+	return hotels, nil
+}
+
+func (s *MongoHotelStore) GetHotelBookings(ctx *fasthttp.RequestCtx, id string) (hotels []*types.HotelBookings, err error) {
+	objectId, _ := primitive.ObjectIDFromHex(id)
+
+	var cursor *mongo.Cursor
+	lookupD := bson.D{{Key: "$lookup", Value: bson.M{
+		"from":         "bookings",
+		"localField":   "rooms",
+		"foreignField": "roomID",
+		"as":           "bookings",
+	}}}
+	if id != "" {
+		matchD := bson.D{{Key: "$match", Value: bson.M{"_id": objectId}}}
+		cursor, err = s.coll.Aggregate(ctx, mongo.Pipeline{matchD, lookupD})
+	} else {
+		cursor, err = s.coll.Aggregate(ctx, mongo.Pipeline{lookupD})
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(ctx, &hotels); err != nil {
 		return nil, err
 	}
 	return hotels, nil

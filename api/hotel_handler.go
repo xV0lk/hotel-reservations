@@ -45,3 +45,16 @@ func (h *HotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 	db.HandleGetError(c, err)
 	return c.JSON(rooms)
 }
+
+func (h *HotelHandler) HandleGetBookingsById(c *fiber.Ctx) error {
+	var id = c.Params("id")
+	bookings, err := h.store.Hotel.GetHotelBookings(c.Context(), id)
+	db.HandleGetError(c, err)
+	return c.Status(fiber.StatusOK).JSON(bookings)
+}
+
+func (h *HotelHandler) HandleGetBookings(c *fiber.Ctx) error {
+	bookings, err := h.store.Hotel.GetHotelBookings(c.Context(), "")
+	db.HandleGetError(c, err)
+	return c.Status(fiber.StatusOK).JSON(bookings)
+}
