@@ -26,7 +26,6 @@ func JWTAuth(userStore db.UserStore) fiber.Handler {
 			return fmt.Errorf("token expired")
 		}
 		userID := claims["id"].(string)
-		fmt.Printf("-------------------------\nuserID: %s\n", userID)
 		user, err := userStore.GetUserById(c.Context(), userID)
 		if err != nil {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})

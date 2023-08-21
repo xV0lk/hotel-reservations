@@ -2,8 +2,10 @@ package types
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -17,7 +19,48 @@ type Booking struct {
 	NumPeople int                `bson:"numPeople,omitempty" json:"numPeople,omitempty"`
 }
 
-func ValidateCapacity(p int, r *Room) error {
+type BookingBody struct {
+	FromDate  time.Time `json:"fromDate"`
+	UntilDate time.Time `json:"untilDate"`
+	NumPeople int       `json:"numPeople"`
+}
+
+type BookingFilter struct {
+	Month int `json:"month"`
+	Year  int `json:"year"`
+}
+
+func (b BookingBody) Validate(r *Room) map[string]string {
+	errors := map[string]string{}
+	// capacity validation
+	if err := validateCapacity(b.NumPeople, r); err != nil {
+		errors["capacity"] = err.Error()
+	}
+	// Date validation
+	if err := validateDate(b); len(err) != 0 {
+		errors["date"] = strings.Join(err, ", ")
+	}
+	// Availability Validation
+
+	return errors
+}
+
+func validateDate(b BookingBody) []string {
+	errors := []string{}
+	now := time.Now()
+	if now.After(b.FromDate) {
+		errors = append(errors, "can't use a date before today date as starting date")
+	}
+	if now.After(b.UntilDate) {
+		errors = append(errors, "can't use a date before today as ending date")
+	}
+	if b.FromDate.After(b.UntilDate) {
+		errors = append(errors, "end date must be after start date")
+	}
+	return errors
+}
+
+func validateCapacity(p int, r *Room) error {
 	switch r.Type {
 	case Single:
 		if p > 1 {
@@ -39,4 +82,37 @@ func ValidateCapacity(p int, r *Room) error {
 		return fmt.Errorf("unknown room type: %d", r.Type)
 	}
 	return nil
+}
+
+func (b BookingFilter) CreateMonthFilter() bson.M {
+	fromDateConditions := bson.M{
+		"$and": []bson.M{
+			{"$eq": bson.A{bson.M{"$month": "$fromDate"}, b.Month}},
+			{"$eq": bson.A{bson.M{"$year": "$fromDate"}, b.Year}},
+		},
+	}
+
+	untilDateConditions := bson.M{
+		"$and": []bson.M{
+			{"$eq": bson.A{bson.M{"$month": "$untilDate"}, b.Month}},
+			{"$eq": bson.A{bson.M{"$year": "$untilDate"}, b.Year}},
+		},
+	}
+
+	return bson.M{
+		"$expr": bson.M{
+			"$or": bson.A{fromDateConditions, untilDateConditions},
+		},
+	}
+}
+
+func (b BookingBody) CreateAvailabilityFilter(rId primitive.ObjectID) bson.M {
+	return bson.M{
+		"roomID": rId,
+		"$or": []bson.M{
+			{"fromDate": bson.M{"$gte": b.FromDate, "$lt": b.UntilDate}},
+			{"untilDate": bson.M{"$gt": b.FromDate, "$lte": b.UntilDate}},
+			{"fromDate": bson.M{"$lte": b.FromDate}, "untilDate": bson.M{"$gte": b.UntilDate}},
+		},
+	}
 }
