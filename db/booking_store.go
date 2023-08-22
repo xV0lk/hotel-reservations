@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+
 	"github.com/valyala/fasthttp"
 	"github.com/xV0lk/hotel-reservations/types"
 
@@ -14,6 +16,9 @@ const bookingColl = "bookings"
 type BookingStore interface {
 	InsertBooking(ctx *fasthttp.RequestCtx, booking *types.Booking) error
 	FilterBookings(ctx *fasthttp.RequestCtx, filter bson.M) ([]*types.Booking, error)
+	GetBookings(ctx *fasthttp.RequestCtx) ([]*types.Booking, error)
+	GetBookingById(ctx *fasthttp.RequestCtx, id string) (*types.Booking, error)
+	CancelBooking(ctx *fasthttp.RequestCtx, id string) (*types.Booking, error)
 }
 
 type MongoBookingStore struct {
@@ -59,4 +64,31 @@ func (s *MongoBookingStore) FilterBookings(ctx *fasthttp.RequestCtx, filter bson
 		return nil, err
 	}
 	return bookings, nil
+}
+
+func (s *MongoBookingStore) GetBookingById(ctx *fasthttp.RequestCtx, id string) (*types.Booking, error) {
+	var booking *types.Booking
+	oId, _ := primitive.ObjectIDFromHex(id)
+	if err := s.coll.FindOne(ctx, bson.M{"_id": oId}).Decode(&booking); err != nil {
+		return nil, err
+	}
+	return booking, nil
+}
+
+func (s *MongoBookingStore) CancelBooking(ctx *fasthttp.RequestCtx, id string) (*types.Booking, error) {
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	filter := bson.M{"_id": objectId}
+	update := bson.M{"$set": bson.M{"cancelled": true}}
+	result, err := s.coll.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+	if result.MatchedCount == 0 {
+		return nil, fmt.Errorf("no booking with id %s", id)
+	}
+	if updated, err := s.GetBookingById(ctx, id); err != nil {
+		return nil, err
+	} else {
+		return updated, nil
+	}
 }

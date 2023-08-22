@@ -17,6 +17,7 @@ type Booking struct {
 	UntilDate time.Time          `bson:"untilDate,omitempty" json:"untilDate,omitempty"`
 	Price     float64            `bson:"price,omitempty" json:"price,omitempty"`
 	NumPeople int                `bson:"numPeople,omitempty" json:"numPeople,omitempty"`
+	Cancelled bool               `bson:"cancelled" json:"cancelled"`
 }
 
 type BookingBody struct {
@@ -100,6 +101,7 @@ func (b BookingFilter) CreateMonthFilter() bson.M {
 	}
 
 	return bson.M{
+		"cancelled": false,
 		"$expr": bson.M{
 			"$or": bson.A{fromDateConditions, untilDateConditions},
 		},
@@ -108,7 +110,8 @@ func (b BookingFilter) CreateMonthFilter() bson.M {
 
 func (b BookingBody) CreateAvailabilityFilter(rId primitive.ObjectID) bson.M {
 	return bson.M{
-		"roomID": rId,
+		"roomID":    rId,
+		"cancelled": false,
 		"$or": []bson.M{
 			{"fromDate": bson.M{"$gte": b.FromDate, "$lt": b.UntilDate}},
 			{"untilDate": bson.M{"$gt": b.FromDate, "$lte": b.UntilDate}},

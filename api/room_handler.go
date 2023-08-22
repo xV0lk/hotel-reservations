@@ -63,6 +63,7 @@ func (h *RoomHandler) HandleBookRoom(c *fiber.Ctx) error {
 		UntilDate: reqBody.UntilDate,
 		NumPeople: reqBody.NumPeople,
 		Price:     tPrice,
+		Cancelled: false,
 	}
 	h.store.Booking.InsertBooking(c.Context(), &cBook)
 	return c.Status(fiber.StatusCreated).JSON(cBook)
