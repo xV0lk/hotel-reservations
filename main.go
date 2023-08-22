@@ -68,6 +68,7 @@ func main() {
 		app  = fiber.New(fconfig)
 		// apiV1 = app.Group("/api/v1")
 		apiV1 = app.Group("/api/v1", middleware.JWTAuth(userStore))
+		admin = apiV1.Group("/admin", middleware.AdminAuth)
 	)
 
 	// Create unique email index
@@ -97,9 +98,10 @@ func main() {
 	apiV1.Get("/room", roomHandler.HandleGetRooms)
 
 	// booking Handlers
-	apiV1.Get("/booking", bookingHandler.HandleGetBookings)
-	apiV1.Get("/booking/:id", bookingHandler.HandleGetBooking)
+	admin.Get("/booking", bookingHandler.HandleGetBookings)
 	apiV1.Get("/booking/month", bookingHandler.HandleMonthBookings)
+	apiV1.Get("/booking/:id", bookingHandler.HandleGetBooking)
+	apiV1.Delete("/booking/:id", bookingHandler.HandleCancelBooking)
 
 	app.Listen(*port)
 }

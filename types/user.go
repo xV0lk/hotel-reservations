@@ -24,6 +24,7 @@ type User struct {
 	LastName  string             `bson:"lastName" json:"lastName"`
 	Email     string             `bson:"email" json:"email"`
 	Password  string             `bson:"password" json:"-"`
+	IsAdmin   bool               `bson:"isAdmin" json:"isAdmin"`
 }
 
 type NewUserParams struct {
@@ -31,6 +32,7 @@ type NewUserParams struct {
 	LastName  string `json:"lastName"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
+	IsAdmin   bool   `json:"isAdmin"`
 }
 
 type UpdateUserParams struct {
@@ -93,6 +95,7 @@ func NewUserFromParams(params *NewUserParams) (*User, error) {
 		LastName:  params.LastName,
 		Email:     params.Email,
 		Password:  string(cryptPass),
+		IsAdmin:   params.IsAdmin,
 	}, nil
 }
 

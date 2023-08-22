@@ -63,6 +63,7 @@ func seedUser(name, lName, email, password string) {
 		LastName:  lName,
 		Email:     email,
 		Password:  password,
+		IsAdmin:   true,
 	}
 	if errors := newUser.Validate(); len(errors) != 0 {
 		log.Fatal(errors)
