@@ -55,6 +55,9 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 	if errors := newUser.Validate(); len(errors) != 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errors})
 	}
+	if err := validateAdminCreation(c, newUser); err != nil {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+	}
 	user, err := types.NewUserFromParams(newUser)
 	if err != nil {
 		return err
@@ -94,4 +97,16 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 		return err
 	}
 	return c.Status(fiber.StatusOK).JSON(updated)
+}
+
+func validateAdminCreation(c *fiber.Ctx, nu *types.NewUserParams) error {
+	// Get user
+	iUser, ok := c.Context().UserValue("user").(*types.User)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal Error"})
+	}
+	if !iUser.IsAdmin && nu.IsAdmin {
+		return fmt.Errorf("forbidden operation")
+	}
+	return nil
 }
