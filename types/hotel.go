@@ -1,6 +1,8 @@
 package types
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Hotel struct {
 	ID       primitive.ObjectID   `bson:"_id,omitempty" json:"id,omitempty"`
@@ -32,6 +34,6 @@ const (
 type Room struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	Type      RoomType           `bson:"type,omitempty" json:"type,omitempty"`
-	BasePrice float64            `bson:"basePrice,omitempty" json:"basePrice,omitempty"`
+	BasePrice int                `bson:"basePrice,omitempty" json:"basePrice,omitempty"`
 	HotelId   primitive.ObjectID `bson:"hotelId,omitempty" json:"hotelId,omitempty"`
 }

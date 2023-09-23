@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/valyala/fasthttp"
@@ -14,7 +15,7 @@ import (
 const bookingColl = "bookings"
 
 type BookingStore interface {
-	InsertBooking(ctx *fasthttp.RequestCtx, booking *types.Booking) error
+	InsertBooking(ctx context.Context, booking *types.Booking) error
 	FilterBookings(ctx *fasthttp.RequestCtx, filter bson.M) ([]*types.Booking, error)
 	GetBookings(ctx *fasthttp.RequestCtx) ([]*types.Booking, error)
 	GetBookingById(ctx *fasthttp.RequestCtx, id string) (*types.Booking, error)
@@ -33,7 +34,7 @@ func NewMongoBookingStore(client *mongo.Client, dbname string) *MongoBookingStor
 	}
 }
 
-func (s *MongoBookingStore) InsertBooking(ctx *fasthttp.RequestCtx, booking *types.Booking) error {
+func (s *MongoBookingStore) InsertBooking(ctx context.Context, booking *types.Booking) error {
 	result, err := s.coll.InsertOne(ctx, booking)
 	if err != nil {
 		return err

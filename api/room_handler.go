@@ -7,6 +7,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/types"
+	iutils "github.com/xV0lk/hotel-reservations/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -54,7 +55,7 @@ func (h *RoomHandler) HandleBookRoom(c *fiber.Ctx) error {
 	if !ok {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal Error"})
 	}
-	tPrice := room.BasePrice * float64(reqBody.UntilDate.Sub(reqBody.FromDate).Hours()/24)
+	tPrice := room.BasePrice * iutils.Dbd(reqBody.FromDate, reqBody.UntilDate)
 
 	cBook := types.Booking{
 		UserID:    user.ID,

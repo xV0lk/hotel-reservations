@@ -2,6 +2,8 @@ package iutils
 
 import (
 	"fmt"
+	"math"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/types"
@@ -24,4 +26,8 @@ func ValidateAdmin(c *fiber.Ctx) error {
 		return fmt.Errorf("Unauthorized")
 	}
 	return nil
+}
+
+func Dbd(from, till time.Time) int {
+	return int(math.Round(till.Sub(from).Hours() / 24))
 }
