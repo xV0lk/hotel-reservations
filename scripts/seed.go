@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/xV0lk/hotel-reservations/db"
+	"github.com/xV0lk/hotel-reservations/db/fixtures"
 	"github.com/xV0lk/hotel-reservations/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,7 +23,7 @@ var (
 	ctx        = context.Background()
 )
 
-func seedHotel(name, location string, rating, priceCategory float64) {
+func seedHotel(name, location string, rating float64, priceCategory int) {
 	hotel := types.Hotel{
 		Name:     name,
 		Location: location,
@@ -78,13 +81,6 @@ func seedUser(name, lName, email, password string) {
 }
 
 func main() {
-	seedHotel("The Coffin", "Transylvania", 3.5, 1)
-	seedHotel("Yokai Inn", "Japan", 4.2, 2)
-	seedHotel("Sherlock hideout", "London", 4.9, 2.5)
-	seedUser("Jorge", "Rojas", "jorge.otto.415@gmail.com", "Jrojas1234$")
-}
-
-func init() {
 	var err error
 	client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(db.DBURI))
 	if err != nil {
@@ -98,6 +94,26 @@ func init() {
 	}
 
 	hotelStore = db.NewMongoHotelStore(client, db.DBNAME)
-	roomStore = db.NewMongoRoomStore(client, hotelStore)
-	userStore = db.NewMongoUserStore(client, db.DBNAME)
+	store := &db.Store{
+		Hotel:   hotelStore,
+		User:    db.NewMongoUserStore(client, db.DBNAME),
+		Booking: db.NewMongoBookingStore(client, db.DBNAME),
+		Room:    db.NewMongoRoomStore(client, hotelStore),
+	}
+	user := fixtures.AddUser(store, "Jorge", "Rojas", true)
+	userH, _ := json.MarshalIndent(user, "", "  ")
+	fmt.Printf("-------------------------\nuser: %s\n", string(userH))
+	hotel := fixtures.AddHotel(store, "The Coffin", "Transylvania", 3.5, 1)
+	room := fixtures.AddRoom(store, types.Double, 155, hotel.ID)
+	booking := fixtures.AddBooking(store, user.ID, room, time.Now(), time.Now().Add(time.Hour*24*4), 2)
+	bookingH, _ := json.MarshalIndent(booking, "", "  ")
+	fmt.Printf("-------------------------\nbooking: %s\n", string(bookingH))
+	fixtures.AddHotel(store, "Yokai Inn", "Japan", 4.2, 2)
+	fixtures.AddHotel(store, "Sherlock hideout", "London", 4.9, 3)
+	return
+
+	seedHotel("The Coffin", "Transylvania", 3.5, 1)
+	seedHotel("Yokai Inn", "Japan", 4.2, 2)
+	seedHotel("Sherlock hideout", "London", 4.9, 3)
+	seedUser("Jorge", "Rojas", "jorge.otto.415@gmail.com", "Jrojas1234$")
 }

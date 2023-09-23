@@ -104,6 +104,7 @@ func (s *MongoUserStore) DeleteUser(ctx *fasthttp.RequestCtx, id string) error {
 func (s *MongoUserStore) UpdateUser(ctx *fasthttp.RequestCtx, id string, updateUser *types.UpdateUserParams) (*types.User, error) {
 	objectId, _ := primitive.ObjectIDFromHex(id)
 	filter := bson.M{"_id": objectId}
+	// update := bson.M{"$set": updateUser}
 	update := bson.M{"$set": updateUser.ToBson()}
 	result, err := s.coll.UpdateOne(ctx, filter, update)
 	if err != nil {
