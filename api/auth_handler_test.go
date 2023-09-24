@@ -2,14 +2,13 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/xV0lk/hotel-reservations/db"
+	"github.com/xV0lk/hotel-reservations/db/fixtures"
 	"github.com/xV0lk/hotel-reservations/types"
 )
 
@@ -17,33 +16,13 @@ type failAuthResponse struct {
 	Error string `json:"error"`
 }
 
-func insertTestUser(t *testing.T, userStore db.UserStore) *types.User {
-	newUser := types.NewUserParams{
-		FirstName: "testName",
-		LastName:  "testLastName",
-		Email:     "test@testmail.com",
-		Password:  "t3$tPassword",
-	}
-	if errors := newUser.Validate(); len(errors) != 0 {
-		t.Fatal(errors)
-	}
-	user, err := types.NewUserFromParams(&newUser)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := userStore.InsertUser(context.TODO(), user); err != nil {
-		t.Fatal(err)
-	}
-	return user
-}
-
 func TestAuth(t *testing.T) {
 	tdb := setup(t)
 	defer tdb.Drop(t)
-	insertedUser := insertTestUser(t, tdb.UserStore)
+	insertedUser := fixtures.AddUser(tdb.Store, "test", "user", false)
 
 	app := fiber.New()
-	authHandler := NewAuthHandler(tdb.UserStore)
+	authHandler := NewAuthHandler(tdb.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
 	for _, tc := range authTests {
@@ -90,8 +69,8 @@ var authTests = []postTest[AuthParams]{
 		name:  "valid user and password",
 		ttype: "pass",
 		input: AuthParams{
-			Email:    "test@testmail.com",
-			Password: "t3$tPassword",
+			Email:    "test@user.com",
+			Password: "test_user_P4$$",
 		},
 		expected: expected{
 			status: fiber.StatusOK,
