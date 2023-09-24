@@ -44,7 +44,7 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	if !types.IsValidPassword(body.Password, user.Password) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Password"})
 	}
-	token, err := createUserToken(user)
+	token, err := CreateUserToken(user)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal error"})
@@ -56,7 +56,7 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(resp)
 }
 
-func createUserToken(user *types.User) (string, error) {
+func CreateUserToken(user *types.User) (string, error) {
 	now := time.Now()
 	expire := now.Add(time.Hour * 24).Unix()
 	claims := jwt.MapClaims{
