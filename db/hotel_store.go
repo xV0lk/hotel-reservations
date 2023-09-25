@@ -80,7 +80,9 @@ func (s *MongoHotelStore) GetHotels(ctx *fasthttp.RequestCtx) ([]*types.Hotel, e
 
 func (s *MongoHotelStore) GetHotelBookings(ctx *fasthttp.RequestCtx, id string) (hotels []*types.HotelBookings, err error) {
 	objectId, _ := primitive.ObjectIDFromHex(id)
-
+	if _, err := s.GetHotelById(ctx, id); err != nil {
+		return nil, err
+	}
 	var cursor *mongo.Cursor
 	lookupD := bson.D{{Key: "$lookup", Value: bson.M{
 		"from":         "bookings",

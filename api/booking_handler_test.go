@@ -10,7 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/db/fixtures"
-	"github.com/xV0lk/hotel-reservations/middleware"
 	"github.com/xV0lk/hotel-reservations/types"
 )
 
@@ -25,8 +24,8 @@ func TestBookings(t *testing.T) {
 
 	app := fiber.New()
 	bookingHandler := NewBookingHandler(db.Store)
-	api := app.Group("/", middleware.JWTAuth(db.Store.User))
-	admin := api.Group("/bookings", middleware.AdminAuth)
+	api := app.Group("/", JWTAuth(db.Store.User))
+	admin := api.Group("/bookings", AdminAuth)
 	api.Get("/booking", bookingHandler.HandleGetBooking)
 	admin.Get("/", bookingHandler.HandleGetBookings)
 

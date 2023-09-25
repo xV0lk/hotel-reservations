@@ -8,10 +8,10 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 	"github.com/xV0lk/hotel-reservations/api"
 	"github.com/xV0lk/hotel-reservations/db"
-	"github.com/xV0lk/hotel-reservations/middleware"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -76,9 +76,12 @@ func main() {
 		port = flag.String("port", ":3000", "port to run the server on")
 		app  = fiber.New(fconfig)
 		// apiV1 = app.Group("/api/v1")
-		apiV1 = app.Group("/api/v1", middleware.JWTAuth(userStore))
-		admin = apiV1.Group("/admin", middleware.AdminAuth)
+		apiV1 = app.Group("/api/v1", api.JWTAuth(userStore))
+		admin = apiV1.Group("/admin", api.AdminAuth)
 	)
+
+	// Add loggin middleware
+	app.Use(logger.New())
 
 	// Create unique email index
 	store.User.IndexEmail(context.Background())

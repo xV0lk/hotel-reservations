@@ -1,7 +1,8 @@
-package middleware
+package api
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -14,21 +15,21 @@ func JWTAuth(userStore db.UserStore) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token, ok := c.GetReqHeaders()["Authorization"]
 		if !ok {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+			return ErrUnauthorized()
 		}
 		claims, err := ValidateToken(token)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+			return ErrUnauthorized()
 		}
 		// check token expiration
 		expiration := claims["expiration"].(float64)
 		if int64(expiration) < time.Now().Unix() {
-			return fmt.Errorf("token expired")
+			return NewError(http.StatusUnauthorized, "Token expired")
 		}
 		userID := claims["id"].(string)
 		user, err := userStore.GetUserById(c.Context(), userID)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+			return ErrUnauthorized()
 		}
 		user.Password = ""
 		c.Context().SetUserValue("user", user)
@@ -50,7 +51,6 @@ func ValidateToken(tokenStr string) (jwt.MapClaims, error) {
 		return []byte(secret), nil
 	})
 	if err != nil {
-		fmt.Printf("-------------------------\nerr: %s\n", err)
 		return nil, fmt.Errorf("Unauthorized")
 	}
 

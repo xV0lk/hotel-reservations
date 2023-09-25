@@ -52,7 +52,7 @@ func (h *HotelHandler) HandleGetBookingsById(c *fiber.Ctx) error {
 	var id = c.Params("id")
 	bookings, err := h.store.Hotel.GetHotelBookings(c.Context(), id)
 	if err != nil {
-		return ErrInternal()
+		return ErrNotFound()
 	}
 	return c.JSON(bookings)
 }
