@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/types"
@@ -52,10 +54,10 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 		return err
 	}
 	if errors := newUser.Validate(); len(errors) != 0 {
-		return NewMapError(fiber.StatusBadRequest, errors)
+		return NewMapError(http.StatusBadRequest, errors)
 	}
 	if err := validateAdminCreation(c, newUser); err != nil {
-		return ErrForbidden()
+		return NewError(http.StatusTeapot, err.Error())
 	}
 	user, err := types.NewUserFromParams(newUser)
 	if err != nil {
@@ -64,11 +66,11 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 	err = h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return NewError(fiber.StatusBadRequest, "Email already exists")
+			return NewError(http.StatusBadRequest, "Email already exists")
 		}
 		return ErrBadRequest()
 	}
-	return c.Status(fiber.StatusCreated).JSON(user)
+	return c.Status(http.StatusCreated).JSON(user)
 }
 
 func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
@@ -85,10 +87,10 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 		return ErrBadRequest()
 	}
 	if err := updateUser.CheckBody(jsonData); err != nil {
-		return NewError(fiber.StatusBadRequest, err.Error())
+		return NewError(http.StatusBadRequest, err.Error())
 	}
 	if errors := updateUser.Validate(); len(errors) != 0 {
-		return NewMapError(fiber.StatusBadRequest, errors)
+		return NewMapError(http.StatusBadRequest, errors)
 	}
 	updated, err := h.userStore.UpdateUser(c.Context(), id, updateUser)
 	if err != nil {

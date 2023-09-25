@@ -54,7 +54,7 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 		User:  user,
 		Token: token,
 	}
-	return c.Status(fiber.StatusOK).JSON(resp)
+	return c.Status(http.StatusOK).JSON(resp)
 }
 
 func CreateUserToken(user *types.User) (string, error) {

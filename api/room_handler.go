@@ -69,7 +69,7 @@ func (h *RoomHandler) HandleBookRoom(c *fiber.Ctx) error {
 		Cancelled: false,
 	}
 	h.store.Booking.InsertBooking(c.Context(), &cBook)
-	return c.Status(fiber.StatusCreated).JSON(cBook)
+	return c.Status(http.StatusCreated).JSON(cBook)
 }
 
 func (h *RoomHandler) isRoomAvailable(ctx *fasthttp.RequestCtx, b types.BookingBody, rId primitive.ObjectID) (bool, error) {

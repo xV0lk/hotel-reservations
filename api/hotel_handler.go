@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 	"go.mongodb.org/mongo-driver/bson"
@@ -62,5 +64,5 @@ func (h *HotelHandler) HandleGetBookings(c *fiber.Ctx) error {
 	if err != nil {
 		return ErrInternal()
 	}
-	return c.Status(fiber.StatusOK).JSON(bookings)
+	return c.Status(http.StatusOK).JSON(bookings)
 }

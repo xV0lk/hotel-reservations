@@ -22,7 +22,7 @@ func TestBookings(t *testing.T) {
 	room := fixtures.AddRoom(db.Store, types.Single, 100, hotel.ID)
 	fixtures.AddBooking(db.Store, user.ID, room, time.Now(), time.Now().AddDate(0, 0, 5), 1)
 
-	app := fiber.New()
+	app := fiber.New(fiber.Config{ErrorHandler: ErrorHandler})
 	bookingHandler := NewBookingHandler(db.Store)
 	api := app.Group("/", JWTAuth(db.Store.User))
 	admin := api.Group("/bookings", AdminAuth)
@@ -102,7 +102,7 @@ var getBookingTests = []bookingCase{
 		},
 		expected: expected{
 			status: http.StatusForbidden,
-			body:   "Unauthorized",
+			body:   "You don't have permission to access this resource",
 		},
 	},
 }

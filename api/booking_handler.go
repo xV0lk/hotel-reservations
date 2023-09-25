@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
@@ -23,14 +24,14 @@ func (h *BookingHandler) HandleMonthBookings(c *fiber.Ctx) error {
 	var reqBody types.BookingFilter
 	err := c.BodyParser(&reqBody)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err})
 	}
 	filter := reqBody.CreateMonthFilter()
 	bookings, err := h.store.Booking.FilterBookings(c.Context(), filter)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err})
 	}
-	return c.Status(fiber.StatusOK).JSON(bookings)
+	return c.Status(http.StatusOK).JSON(bookings)
 }
 
 func (h *BookingHandler) HandleGetBookings(c *fiber.Ctx) error {

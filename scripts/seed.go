@@ -33,7 +33,7 @@ func main() {
 		Hotel:   hotelStore,
 		User:    db.NewMongoUserStore(client, db.DBNAME),
 		Booking: db.NewMongoBookingStore(client, db.DBNAME),
-		Room:    db.NewMongoRoomStore(client, hotelStore),
+		Room:    db.NewMongoRoomStore(client, hotelStore, db.DBNAME),
 	}
 	admin := fixtures.AddUser(store, "Jorge", "Rojas", true)
 	adminToken, _ := api.CreateUserToken(admin)

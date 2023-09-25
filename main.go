@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -22,21 +21,7 @@ const (
 )
 
 var fconfig = fiber.Config{
-	ErrorHandler: func(c *fiber.Ctx, err error) error {
-		if apiError, ok := err.(api.Error); ok {
-			if apiError.Map != nil {
-				return c.Status(apiError.Code).JSON(fiber.Map{"error": apiError.Map})
-			}
-			return c.Status(apiError.Code).JSON(fiber.Map{"error": apiError.Err})
-		}
-		if apiError, ok := err.(api.Error); ok {
-			return c.Status(apiError.Code).JSON(fiber.Map{"error": apiError.Err})
-		}
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not found"})
-		}
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	},
+	ErrorHandler: api.ErrorHandler,
 }
 
 func main() {
@@ -58,7 +43,7 @@ func main() {
 		// stores
 		userStore    = db.NewMongoUserStore(client, db.DBNAME)
 		hotelStore   = db.NewMongoHotelStore(client, db.DBNAME)
-		roomStore    = db.NewMongoRoomStore(client, hotelStore)
+		roomStore    = db.NewMongoRoomStore(client, hotelStore, db.DBNAME)
 		bookingStore = db.NewMongoBookingStore(client, db.DBNAME)
 		store        = &db.Store{
 			User:    userStore,

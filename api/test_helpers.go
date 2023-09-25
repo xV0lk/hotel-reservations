@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"testing"
 
@@ -50,14 +49,13 @@ func setup(t *testing.T) *testdb {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Connected to test MongoDB!")
 	hotelStore := db.NewMongoHotelStore(client, testDbName)
 	return &testdb{
 		client: client,
 		Store: &db.Store{
 			User:    db.NewMongoUserStore(client, testDbName),
 			Hotel:   hotelStore,
-			Room:    db.NewMongoRoomStore(client, hotelStore),
+			Room:    db.NewMongoRoomStore(client, hotelStore, testDbName),
 			Booking: db.NewMongoBookingStore(client, testDbName),
 		},
 	}

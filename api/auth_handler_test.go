@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
@@ -17,12 +18,12 @@ type failAuthResponse struct {
 }
 
 func TestAuth(t *testing.T) {
-	tdb := setup(t)
-	defer tdb.Drop(t)
-	insertedUser := fixtures.AddUser(tdb.Store, "test", "user", false)
+	db := setup(t)
+	defer db.Drop(t)
+	insertedUser := fixtures.AddUser(db.Store, "test", "user", false)
 
-	app := fiber.New()
-	authHandler := NewAuthHandler(tdb.User)
+	app := fiber.New(fiber.Config{ErrorHandler: ErrorHandler})
+	authHandler := NewAuthHandler(db.Store.User)
 	app.Post("/auth", authHandler.HandleAuthenticate)
 
 	for _, tc := range authTests {
@@ -40,7 +41,7 @@ func (tc testCase[AuthParams]) testAuth(t *testing.T, app *fiber.App, expectedUs
 	if res.StatusCode != tc.status {
 		t.Fatalf("expected status %d, got %s", tc.status, res.Status)
 	}
-	if tc.ttype == "pass" {
+	if tc.ttype == TESTPASS {
 		var authResp AuthResponse
 		if err := json.NewDecoder(res.Body).Decode(&authResp); err != nil {
 			t.Fatal(err)
@@ -52,7 +53,7 @@ func (tc testCase[AuthParams]) testAuth(t *testing.T, app *fiber.App, expectedUs
 		if !reflect.DeepEqual(authResp.User, expectedUser) {
 			t.Errorf("expected %v, got %v", expectedUser, authResp.User)
 		}
-	} else if tc.ttype == "fail" {
+	} else if tc.ttype == TESTFAIL {
 		var resBody failAuthResponse
 		err := json.NewDecoder(res.Body).Decode(&resBody)
 		if err != nil {
@@ -67,38 +68,38 @@ func (tc testCase[AuthParams]) testAuth(t *testing.T, app *fiber.App, expectedUs
 var authTests = []testCase[AuthParams]{
 	{
 		name:  "valid user and password",
-		ttype: "pass",
+		ttype: TESTPASS,
 		input: AuthParams{
 			Email:    "test@user.com",
 			Password: "test_user_P4$$",
 		},
 		expected: expected{
-			status: fiber.StatusOK,
+			status: http.StatusOK,
 			body:   nil,
 		},
 	},
 	{
 		name:  "invalid password",
-		ttype: "fail",
+		ttype: TESTFAIL,
 		input: AuthParams{
-			Email:    "test@testmail.com",
+			Email:    "test@user.com",
 			Password: "t3tPassword",
 		},
 		expected: expected{
-			status: fiber.StatusBadRequest,
-			body:   "Invalid Password",
+			status: http.StatusBadRequest,
+			body:   "Invalid password",
 		},
 	},
 	{
 		name:  "invalid email",
-		ttype: "fail",
+		ttype: TESTFAIL,
 		input: AuthParams{
 			Email:    "test@testmail.comm",
 			Password: "t3tPassword",
 		},
 		expected: expected{
-			status: fiber.StatusNotFound,
-			body:   "Not Found",
+			status: http.StatusNotFound,
+			body:   "The id you provided is invalid",
 		},
 	},
 }
