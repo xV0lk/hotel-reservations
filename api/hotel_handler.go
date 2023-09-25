@@ -23,9 +23,9 @@ func (h *HotelHandler) HandleGetHotel(c *fiber.Ctx) error {
 	hotel, err := h.store.Hotel.GetHotelById(c.Context(), id)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+			return ErrNotFound()
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return ErrInternal()
 	}
 	return c.JSON(hotel)
 }
@@ -33,7 +33,7 @@ func (h *HotelHandler) HandleGetHotel(c *fiber.Ctx) error {
 func (h *HotelHandler) HandleGetHotels(c *fiber.Ctx) error {
 	hotels, err := h.store.Hotel.GetHotels(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return ErrInternal()
 	}
 	return c.JSON(hotels)
 }
@@ -42,19 +42,25 @@ func (h *HotelHandler) HandleGetRooms(c *fiber.Ctx) error {
 	var id = c.Params("id")
 	objectId, _ := primitive.ObjectIDFromHex(id)
 	rooms, err := h.store.Room.GetRooms(c.Context(), bson.M{"hotelId": objectId})
-	db.HandleGetError(c, err)
+	if err != nil {
+		return ErrInternal()
+	}
 	return c.JSON(rooms)
 }
 
 func (h *HotelHandler) HandleGetBookingsById(c *fiber.Ctx) error {
 	var id = c.Params("id")
 	bookings, err := h.store.Hotel.GetHotelBookings(c.Context(), id)
-	db.HandleGetError(c, err)
-	return c.Status(fiber.StatusOK).JSON(bookings)
+	if err != nil {
+		return ErrInternal()
+	}
+	return c.JSON(bookings)
 }
 
 func (h *HotelHandler) HandleGetBookings(c *fiber.Ctx) error {
 	bookings, err := h.store.Hotel.GetHotelBookings(c.Context(), "")
-	db.HandleGetError(c, err)
+	if err != nil {
+		return ErrInternal()
+	}
 	return c.Status(fiber.StatusOK).JSON(bookings)
 }

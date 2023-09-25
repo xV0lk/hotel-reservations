@@ -23,6 +23,15 @@ const (
 
 var fconfig = fiber.Config{
 	ErrorHandler: func(c *fiber.Ctx, err error) error {
+		if apiError, ok := err.(api.Error); ok {
+			if apiError.Map != nil {
+				return c.Status(apiError.Code).JSON(fiber.Map{"error": apiError.Map})
+			}
+			return c.Status(apiError.Code).JSON(fiber.Map{"error": apiError.Err})
+		}
+		if apiError, ok := err.(api.Error); ok {
+			return c.Status(apiError.Code).JSON(fiber.Map{"error": apiError.Err})
+		}
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not found"})
 		}

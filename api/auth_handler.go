@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -39,15 +40,15 @@ func (h *AuthHandler) HandleAuthenticate(c *fiber.Ctx) error {
 	}
 	user, err := h.userStore.GetUser(c.Context(), bson.M{"email": body.Email})
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not Found"})
+		return ErrNotFound()
 	}
 	if !types.IsValidPassword(body.Password, user.Password) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid Password"})
+		return NewError(http.StatusBadRequest, "Invalid password")
 	}
 	token, err := CreateUserToken(user)
 	if err != nil {
 		fmt.Println("Error: ", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal error"})
+		return ErrInternal()
 	}
 	resp := AuthResponse{
 		User:  user,

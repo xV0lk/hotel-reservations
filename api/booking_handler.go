@@ -36,7 +36,7 @@ func (h *BookingHandler) HandleMonthBookings(c *fiber.Ctx) error {
 func (h *BookingHandler) HandleGetBookings(c *fiber.Ctx) error {
 	bookings, err := h.store.Booking.GetBookings(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not Found."})
+		return ErrNotFound()
 	}
 	return c.JSON(bookings)
 }
@@ -45,10 +45,10 @@ func (h *BookingHandler) HandleGetBooking(c *fiber.Ctx) error {
 	bookingId := c.Params("id")
 	booking, err := h.store.Booking.GetBookingById(c.Context(), bookingId)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not Found."})
+		return ErrNotFound()
 	}
 	if err := bookingAuthorization(c, booking); err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err})
+		return ErrForbidden()
 	}
 	return c.JSON(booking)
 }
@@ -57,14 +57,14 @@ func (h *BookingHandler) HandleCancelBooking(c *fiber.Ctx) error {
 	bookingId := c.Params("id")
 	booking, err := h.store.Booking.GetBookingById(c.Context(), bookingId)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not Found"})
+		return ErrNotFound()
 	}
 	if err := bookingAuthorization(c, booking); err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err})
+		return ErrForbidden()
 	}
 	booking, err = h.store.Booking.CancelBooking(c.Context(), bookingId)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		return ErrInternal()
 	}
 	return c.JSON(booking)
 }

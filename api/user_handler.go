@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/xV0lk/hotel-reservations/db"
 	"github.com/xV0lk/hotel-reservations/types"
@@ -23,7 +21,9 @@ func NewUserHandler(userStore db.UserStore) *UserHandler {
 func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
 	var id = c.Params("id")
 	user, err := h.userStore.GetUserById(c.Context(), id)
-	db.HandleGetError(c, err)
+	if err != nil {
+		return ErrNotFound()
+	}
 	return c.JSON(user)
 }
 
@@ -31,9 +31,8 @@ func (h *UserHandler) HandleGetUser(c *fiber.Ctx) error {
 func (h *UserHandler) HandleGetUsers(c *fiber.Ctx) error {
 	users, err := h.userStore.GetUsers(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		return ErrInternal()
 	}
-	// We can user fiber.map to create a map[string]interface{}
 	return c.JSON(users)
 }
 
@@ -41,7 +40,7 @@ func (h *UserHandler) HandleDeleteUser(c *fiber.Ctx) error {
 	var id = c.Params("id")
 	err := h.userStore.DeleteUser(c.Context(), id)
 	if err != nil {
-		return err
+		return ErrBadRequest()
 	}
 
 	return c.JSON(fiber.Map{"message": "User deleted successfully!"})
@@ -53,22 +52,21 @@ func (h *UserHandler) HandlePostUser(c *fiber.Ctx) error {
 		return err
 	}
 	if errors := newUser.Validate(); len(errors) != 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errors})
+		return NewMapError(fiber.StatusBadRequest, errors)
 	}
 	if err := validateAdminCreation(c, newUser); err != nil {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
+		return ErrForbidden()
 	}
 	user, err := types.NewUserFromParams(newUser)
 	if err != nil {
-		return err
+		return ErrInternal()
 	}
 	err = h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			errStr := fmt.Sprintf("Duplicate key error for %s", db.FormatMongoE(err))
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errStr})
+			return NewError(fiber.StatusBadRequest, "Email already exists")
 		}
-		return err
+		return ErrBadRequest()
 	}
 	return c.Status(fiber.StatusCreated).JSON(user)
 }
@@ -80,33 +78,33 @@ func (h *UserHandler) HandlePutUser(c *fiber.Ctx) error {
 		updateUser *types.UpdateUserParams
 	)
 	if err := c.BodyParser(&updateUser); err != nil {
-		return err
+		return ErrBadRequest()
 	}
 	err := c.BodyParser(&jsonData)
 	if err != nil {
-		return err
+		return ErrBadRequest()
 	}
 	if err := updateUser.CheckBody(jsonData); err != nil {
-		return err
+		return NewError(fiber.StatusBadRequest, err.Error())
 	}
 	if errors := updateUser.Validate(); len(errors) != 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errors})
+		return NewMapError(fiber.StatusBadRequest, errors)
 	}
 	updated, err := h.userStore.UpdateUser(c.Context(), id, updateUser)
 	if err != nil {
-		return err
+		return ErrInternal()
 	}
-	return c.Status(fiber.StatusOK).JSON(updated)
+	return c.JSON(updated)
 }
 
 func validateAdminCreation(c *fiber.Ctx, nu *types.NewUserParams) error {
 	// Get user
 	iUser, ok := c.Context().UserValue("user").(*types.User)
 	if !ok {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal Error"})
+		return ErrInternal()
 	}
 	if !iUser.IsAdmin && nu.IsAdmin {
-		return fmt.Errorf("forbidden operation")
+		return ErrForbidden()
 	}
 	return nil
 }

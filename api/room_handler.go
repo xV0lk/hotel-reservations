@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fmt"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/valyala/fasthttp"
@@ -24,7 +24,9 @@ func NewRoomHandler(store *db.Store) *RoomHandler {
 
 func (h *RoomHandler) HandleGetRooms(c *fiber.Ctx) error {
 	rooms, err := h.store.Room.GetRooms(c.Context(), bson.M{})
-	db.HandleGetError(c, err)
+	if err != nil {
+		return ErrInternal()
+	}
 	return c.JSON(rooms)
 }
 
@@ -33,27 +35,27 @@ func (h *RoomHandler) HandleBookRoom(c *fiber.Ctx) error {
 	var reqBody types.BookingBody
 	err := c.BodyParser(&reqBody)
 	if err != nil {
-		fmt.Println("Error: ", err)
+		return ErrBadRequest()
 	}
 	room, err := h.store.Room.GetRoomById(c.Context(), roomId)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Not Found"})
+		return ErrNotFound()
 	}
 	if errors := reqBody.Validate(room); len(errors) != 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": errors})
+		return ErrBadRequest()
 	}
 	// Check if the room is available
 	ra, err := h.isRoomAvailable(c.Context(), reqBody, room.ID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		return ErrInternal()
 	}
 	if !ra {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "This room is not available for the time selected"})
+		return NewError(http.StatusBadRequest, "This room is not available for the time selected")
 	}
 	// Get user
 	user, ok := c.Context().UserValue("user").(*types.User)
 	if !ok {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Internal Error"})
+		return ErrInternal()
 	}
 	tPrice := room.BasePrice * iutils.Dbd(reqBody.FromDate, reqBody.UntilDate)
 
@@ -74,7 +76,7 @@ func (h *RoomHandler) isRoomAvailable(ctx *fasthttp.RequestCtx, b types.BookingB
 	avFilter := b.CreateAvailabilityFilter(rId)
 	cb, err := h.store.Booking.FilterBookings(ctx, avFilter)
 	if err != nil {
-		return false, err
+		return false, ErrInternal()
 	}
 	available := len(cb) == 0
 	return available, nil
