@@ -32,7 +32,7 @@ func TestAuth(t *testing.T) {
 	}
 }
 
-func (tc postTest[AuthParams]) testAuth(t *testing.T, app *fiber.App, expectedUser *types.User) {
+func (tc testCase[AuthParams]) testAuth(t *testing.T, app *fiber.App, expectedUser *types.User) {
 	b, _ := json.Marshal(tc.input)
 	req := httptest.NewRequest("POST", "/auth", bytes.NewReader(b))
 	req.Header.Add("Content-Type", "application/json")
@@ -64,7 +64,7 @@ func (tc postTest[AuthParams]) testAuth(t *testing.T, app *fiber.App, expectedUs
 	}
 }
 
-var authTests = []postTest[AuthParams]{
+var authTests = []testCase[AuthParams]{
 	{
 		name:  "valid user and password",
 		ttype: "pass",

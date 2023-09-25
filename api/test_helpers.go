@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/xV0lk/hotel-reservations/db"
-	"github.com/xV0lk/hotel-reservations/types"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -15,6 +14,8 @@ import (
 const (
 	testDbUri  = "mongodb://localhost:27017"
 	testDbName = "hotel-reservations-test"
+	TESTPASS   = "pass"
+	TESTFAIL   = "fail"
 )
 
 type expected struct {
@@ -22,7 +23,7 @@ type expected struct {
 	body   any
 }
 
-type postTest[T any] struct {
+type testCase[T any] struct {
 	name  string
 	ttype string
 	input T
@@ -32,8 +33,6 @@ type postTest[T any] struct {
 type failUserResponse struct {
 	Error map[string]string `json:"error"`
 }
-
-type userTest types.NewUserParams
 
 type testdb struct {
 	client *mongo.Client

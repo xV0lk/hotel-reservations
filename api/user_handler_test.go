@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/xV0lk/hotel-reservations/types"
 )
 
 func TestPostUser(t *testing.T) {
@@ -25,7 +26,7 @@ func TestPostUser(t *testing.T) {
 
 }
 
-func (tc postTest[userTest]) testUser(t *testing.T, app *fiber.App) {
+func (tc testCase[userTest]) testUser(t *testing.T, app *fiber.App) {
 	b, _ := json.Marshal(tc.input)
 	req := httptest.NewRequest("POST", "/", bytes.NewReader(b))
 	req.Header.Add("Content-Type", "application/json")
@@ -61,7 +62,9 @@ func (tc postTest[userTest]) testUser(t *testing.T, app *fiber.App) {
 	}
 }
 
-var userTests = []postTest[userTest]{
+type userTest types.NewUserParams
+
+var userTests = []testCase[userTest]{
 	{
 		name:  "valid user",
 		ttype: "pass",
